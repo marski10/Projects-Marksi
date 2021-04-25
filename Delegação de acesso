@@ -1,0 +1,236 @@
+//-------------------------------------------------------------------
+/*/{Protheus.doc} DelegaAcesso
+Função criada para delegar acesso a usuários
+@author  Marcos.Aurelio
+@since   21/02/2021
+@version 1.0
+/*/
+//-------------------------------------------------------------------
+
+User Function DelegaAcesso()
+Private oBrowse := FWMBrowse():New()
+
+oBrowse:SetAlias('ZZI')
+oBrowse:SetDescription('Delegação de Acesso')
+oBrowse:Activate()
+
+Return
+
+
+/*/{Protheus.doc} MenuDef()
+	(long_description)
+	@type  Static Function
+	@author user
+	@since date
+	@version version
+	@param param, param_type, param_descr
+	@return return, return_type, return_description
+	@example
+	(examples)
+	@see (links_or_references)
+/*/
+Static Function MenuDef()
+
+Local aRotina := {}
+
+aAdd(aRotina,{'Incluir', 'VIEWDEF.DelegaAcesso',0,3,0,Nil })
+aAdd(aRotina,{'Alterar', 'VIEWDEF.DelegaAcesso',0,4,0,Nil })
+aAdd(aRotina,{'Excluir', 'VIEWDEF.DelegaAcesso',0,5,0,Nil })
+
+Return (aRotina)
+
+
+/*/{Protheus.doc} ModelDef()
+	(long_description)
+	@type  Static Function
+	@author user
+	@since date
+	@version version
+	@param param, param_type, param_descr
+	@return return, return_type, return_description
+	@example
+	(examples)
+	@see (links_or_references)
+	/*/
+Static Function ModelDef()
+Local oStruZZI := FWFormStruct(1,'ZZI')
+Local oStruZZJ := FWFormStruct(1,'ZZJ')
+Local oStruZZK := FWFormStruct(1,'ZZK')
+Local oModel   := FWFormModel():New('XDelegaAcesso',{|oMdl|PreModelo(oMdl)},,{|oMdl|GrvDados(oMdl)})
+
+//Altera Campo de relação da ZZI para visualização e remove da ZZJ
+oStruZZI:SetProperty('ZZI_UNIQCD',MODEL_FIELD_WHEN,.F.)
+oStruZZJ:RemoveField('ZZJ_UNIQCD')
+oStrutZZ:RemoveField('ZZK_UNIQCD')
+//Inicilizador de campos
+oModel:SetProperty('ZZI_UNIQCD',MODEL_FIELD_INIT ,{||PegaSeq()})
+oStruZ24:AddTrigger( 'ZZI_CODUSE',,  { || .t. }, { | | RetAcesso('ZZI_CODUSE,ZZI_UNIQCD') } )
+
+//Define a grid e o header
+oModel:AddField('ZZIMASTER',oStruZZI)
+oModel:AddGrid('ZZJDETAIL','ZZIMASTER',oStruZZJ)
+oModel:AddGrid('ZZKDETAIL','ZZIMASTER',oStruZZK)
+//Faz a Relação do modelo ZZI com o submodelo ZZJ
+oModel:SetRelation('ZZJDETAIL',{'ZZI_UNIQCD','ZZJ_UNIQCD'}, ZZJ->(IndexKey(1)))
+oModel:SetRelation('ZZKDETAIL',{'ZZI_UNIQCD','ZZK_UNIQCD'}, ZZK->(IndexKey(1)))
+//Define a descrição pro modelo ZZI e submdelo ZZJ
+oModel:GetModel('ZZIMASTER'):SetDescription('Configuração de Acesso')
+oModel:GetModel('ZZJDETAIL'):SetDescription('Acessos rotinas')
+oModel:GetModel('ZZKDETAIL'):SetDescription('Emails de WF')
+
+
+oModel:Activate()
+
+
+
+Return (oModel)
+
+
+/*/{Protheus.doc} ViewDef()
+	(long_description)
+	@type  Static Function
+	@author marcos.aurelio
+	@since date
+	@version version
+	@param param, param_type, param_descr
+	@return return, return_type, return_description
+	@example
+	(examples)
+	@see (links_or_references)
+	/*/
+Static Function ViewDef()
+Local oModel   := FWLoadModel('DelegaAcesso')
+Local oStruZZI := FWFormStruct(2,'ZZI')
+Local oStruZZJ := FWFormStruct(2,'ZZJ')
+Local oStruZZK := FWFormStruct(2,'ZZK')
+Local oView    := FwFormView():New()
+
+//seto o model que vou utilizar
+oView:SetModel(oModel)
+
+//Crio a o alias da header e das Grid na View
+oView:AddField('VIEW_ZZI',oStruZZI,'ZZIMASTER')
+oView:AddGrid('VIEW_ZZJ',oStruZZJ,'ZZJDETAIL')
+oView:AddGrid('VIEW.ZZK',oStruZZK,'ZZKDETAIL')
+
+//Crio as box da tabela ZZI e a Folder que ira armazenar a tabela ZZJ e ZZK
+oView:CreateHorizontalBox('HEADER',45)
+oView:CreateHorizontalBox('GRID1',55)
+oView:CreateFolder('FOLDER','GRID1')
+
+//Crio a primeira sheet de acesso e a horizontal box
+oView:AddSheet('FOLDER','ACESS','Acessos')
+oView:CreateHorizontalBox('ABA1',100,,,'FOLDER','ACESS')
+oView:SetOwnerView('VIEW_ZZJ','ABA1')
+
+//Crio a segunda sheet de e-mails e a CreateHorizontalBox
+oView:AddSheet('Folder','EMAIL','Emails de WF')
+oView:CreateHorizontalBox('ABA2',100,,,'FOLDER','EMAIL')
+oView:SetOwnerView('VIEW_ZZK','ABA2')
+
+Return (oView)
+
+
+
+
+
+Static Function GrvDados()
+
+
+
+Return
+
+
+
+Static Function ExistPrdTb()
+
+	Local lRet 		:= .F.
+	Local oModel  	:= FWModelActive()
+	Local oModZY4 	:= oModel:GetModel('ZY4DETAIL')
+	Local cItemAt   := Alltrim(oModZY4:GetValue('ZY4_ITEM'))
+	Local cCodProd  := Alltrim(oModZY4:GetValue('ZY4_PRODUT'))
+	Local aSaveLines:= FWSaveRows() //salvando a area (posição) do grid
+	Local nX
+	
+	//se for campanha permite mais de um produto na mesma tabela
+	If cTipoTab = 'C'
+		Return .F.
+	EndIf
+	
+	For nX := 1 To oModZY4:Length()
+		oModZY4:GoLine(nX)
+		If lRet := (( Alltrim(oModZY4:GetValue('ZY4_PRODUT')) = cCodProd) .and. (cItemAt != Alltrim(oModZY4:GetValue('ZY4_ITEM'))) )
+			MsgAlert(StaticCall(M0000004, Saudacao) + 	', você está tentando inserir um produto que já está presente nesta tabela! '+Chr(13)+;
+														'Caso queira alterar o seu preço, favor posicionar no item: '+Alltrim(oModZY4:GetValue('ZY4_ITEM'))+Chr(13)+;
+														'Ou usar a rotina de pesquisa de produto.','Atenção')
+			Exit
+		EndIf
+	Next
+		
+	FWRestRows( aSaveLines ) //resturo a posição do grid
+
+Return lRet
+
+
+
+Static Function PegaSeq()
+Local aArea  := GetArea()
+Local cAlias := GetNextAlias()
+Local cIniCod 
+	BeginSql Alias 'cAlias'
+	
+		SELECT MAX(ZZI_UNIQCD) AS UNICD
+		FROM ZZI
+	
+
+
+	EndSql
+	
+	dbSelectArea('cAlias')
+	dbGoTop()
+
+	cIniCod := Soma1((cAlias)->UNICD)
+
+	(cAlias)->DBCloseArea()
+	RestArea(aArea)
+Return cIniCod
+
+
+
+Static Function RetAcesso(cCodusr,cCODUNIQ)
+Local aArea := GetArea()
+oModel := FwModelActive()
+Local cAlias := GetNextAlias()
+Local oZZJ := oModel:GetModel("ZZJDETAIL")
+	 
+	BeginSql Alias cAlias
+	
+		SELECT Z03_FILIAL,Z03_GRUPO,Z05_DESCRI,Z03_DTINI,Z03_DTFIM
+		FROM %table:Z03% Z03
+		JOIN %table:Z05% Z05
+		ON Z05.Z05_TABELA = '000001' 
+		 	AND Z03.Z03_GRUPO = Z05.Z05_ITEM
+		WHERE Z03_CODUSR = %Exp:cCodusr%
+			AND  Z03.%NOTDEL% AND Z05.%NOTDEL% 
+			AND Z03.Z03_DTFIM >= CONVERT(varchar, getdate(),112)
+	EndSql
+
+dbSelectArea(cAlias)
+(cAlias)->(dbGoTop())
+
+
+While ! (cAlias)->(EoF())
+	
+	oZZJ:SetValue('ZZJ_FILIAL',	(cAlias)->Z03_FILIAL)
+	oZZJ:SetValue('ZZJ_GRUPO',	(cAlias)->Z03_GRUPO)	
+	oZZJ:SetValue('ZZJ_DESCGR',	(cAlias)->Z05_DESCRI)
+	oZZJ:SetValue('ZZJ_DATAIN',	(cAlias)->Z03_DTINI)
+	oZZJ:SetValue('ZZJ_DATAFI',	(cAlias)->Z03_DTFIM)
+	oZZJ:AddLine()
+	(cAlias)->(dbSkip())
+EndDo
+
+(cAlias)->(dbCloseArea)
+RestArea(aArea)
+
+Return
