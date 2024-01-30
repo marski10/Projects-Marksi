@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goserver
+  labels:
+    app: goserver
+spec:
+  selector:
+    matchLabels:
+      app: goserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: goserver
+    spec:
+      containers:
+        - name: goserver
+          image: "marquinhusbill/hello-go:v7.3"
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 20Mi
+            limits:
+              cpu: 50m
+              memory: 40Mi
+
+        #  readinessProbe:
+        #    httpGet:
+        #      path: /healthz
+        #      port: 80
+        #    periodSeconds: 3
+        #       initialDelaySeconds: 10 
+        #      failureThreshold: 1
+        #       timeoutSeconds: 1
+        #       successThreshold: 1
+        #     
+        #    startupProbe:
+        #    httpGet:
+        #      path: /healthz
+        #      port: 80
+        #    periodSeconds: 3
+        #    failureThreshold: 30
+
+        #  livenessProbe:
+        #    httpGet:
+        #      path: /healthz
+        #      port: 80
+        #    periodSeconds: 6
+        #    failureThreshold: 1
+        #    timeoutSeconds: 1
+        #    successThreshold: 1
+        #    #initialDelaySeconds: 10 
+          envFrom:
+            - configMapRef:
+                name: goserver-env
+            - secretRef:
+                name: goserver-secret
+          volumeMounts:
+            - mountPath: "go/myfamily"
+              name: config
+      volumes:
+        - name: config
+          configMap:
+            name: configmap-family
+            items:
+            - key: members
+              path: "family.txt"
+#          env:
+#            - name: NAME
+#              valueFrom: 
+#                configMapKeyRef:
+#                  name: goserver-env
+#                  key: NAME
+#
+#                
+#            - name: AGE
+#              valueFrom:
+#              configMapKeyRef:
+#                name: goserver-env
+#                key: AGE

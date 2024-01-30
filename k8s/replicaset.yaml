@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Replicaset  
+metadata:
+  labels:
+    app: goserver
+spec:
+  selector:
+    matchLabels:
+      app: goserver
+  containers:
+    - name: goserver
+      image: "marquinhusbill/hello-go:latest"
