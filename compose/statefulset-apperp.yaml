@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: erp-bd-statefulset
+  labels:
+    app: erp
+spec:
+  serviceName: erp-bd-service
+  replicas: 2
+  selector:
+    matchLabels: 
+      app: erp    
+
+  template:
+    metadata:
+      labels:
+        app: erp
+    spec:
+      containers:
+      - name: erp-bd
+        image: postgres:alpine3.19
+        ports: 
+        - containerPort: 5432
+        resources:
+          requests:
+            cpu: "10m"
+            memory: "100Mi"
+          limits:
+            cpu: "100m"
+            memory: "500Mi"
+        volumeMounts:
+        - mountPath: /var/lib/pgsql/data
+          name: postgres-volume
+        
+        envFrom:
+        - secretRef:
+            name: apperp-secret
+
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-volume
+    spec: 
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+        limits:
+          storage: 500Mi
